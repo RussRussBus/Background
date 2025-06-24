@@ -45,6 +45,6 @@ for ctrl_file in os.listdir(arg.ctrl):
         os.system(f'findPeaks {wd}/{exp_out}_tag_dir -i {wd}/{ctrl_out}_tag_dir > {wd}/homer_{exp_out}_{ctrl_out}.txt')
     i += 1
 
-os.system(f'rm -rf {wd}/results')
-os.system(f'mkdir {wd}/results')
-os.system(f'mv {wd}/homer* {wd}/results')
+os.system(f'rm -rf {wd}/outputs')
+os.system(f'mkdir {wd}/outputs')
+os.system(f'mv {wd}/homer* {wd}/outputs')
