@@ -1,0 +1,9 @@
+name: background_project
+channels:
+  - defaults
+  - bioconda
+dependencies:
+  - bowtie2
+  - python
+  - samtools
+  - macs2

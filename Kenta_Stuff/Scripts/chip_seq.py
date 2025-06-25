@@ -37,6 +37,10 @@ parser.add_argument('--num_fg_peaks', type=int, default=1,
     help='Number of random foreground peaks to add')
 parser.add_argument('--fragment_length', type=int, default=20,
     help='The fragment length of each read (k-mer size); usually between 100=500bp')
+parser.add_argument('--peak_broadness', type=int, default=9,
+    help='Number of bins that make up each peak')
+parser.add_argument('--tallness', type=int, default=10,
+    help='Height multiplier for peak center relative to baseline')
 
 args = parser.parse_args()
 
@@ -46,6 +50,8 @@ coverage = args.coverage
 num_bg_peaks = args.num_bg_peaks
 num_fg_peaks = args.num_fg_peaks
 k = args.fragment_length
+peak_broadness = args.peak_broadness
+tallness = args.tallness
 
 
 '''
@@ -69,14 +75,16 @@ _________
 """
 
 
-def add_peaks(pmf, num_peaks):
-    """
-    Take in a bins pmf, and adds num_peaks peaks to it
-    """ 
-    #peaks = [2, 4, 6, 8, 9, 8, 6, 4, 2] # can change this however you want 
-    peaks = [round(1000 * min(i, 99 - i) / 49) for i in range(100)] # A peak that is 100 bp wide and peaks at 1000:1 compared to baseline level
-    used_peaks = [] # store used peaks
-    p_index = random.randint(0, len(pmf) - len(peaks)) # init
+def add_peaks(pmf, num_peaks, peak_broadness, tallness):
+    """Add num_peaks peaks using broadness and tallness"""
+    center = max(peak_broadness // 2, 1)
+    peaks = []
+    for i in range(peak_broadness):
+        distance = abs(i - center)
+        height = 1 + (tallness - 1) * (1 - distance / center)
+        peaks.append(height)
+    used_peaks = []
+    p_index = random.randint(0, len(pmf) - len(peaks))
 
     for peak in range(num_peaks):
         while p_index in used_peaks:
@@ -106,10 +114,8 @@ def sample_from_bins(pmf, num_sample):
     samples = random.choices(bins_indices, weights=pmf, k=num_sample)
     return samples
 
-def create_pmf(chrom_len, num_bg_peaks, num_fg_peaks, k):
-    """
-    Create a pmf for all possible fragments combining the background and foreground pmfs. 
-    """
+def create_pmf(chrom_len, num_bg_peaks, num_fg_peaks, k, peak_broadness, tallness):
+    """Create combined pmf for one chromosome"""
     
     num_bins = chrom_len - k + 1
 
@@ -117,29 +123,22 @@ def create_pmf(chrom_len, num_bg_peaks, num_fg_peaks, k):
     pmf = [1] * num_bins
 
     # add background peaks
-    pmf = add_peaks(pmf, num_bg_peaks)
+    pmf = add_peaks(pmf, num_bg_peaks, peak_broadness, tallness)
 
     # add foreground peaks
-    pmf = add_peaks(pmf, num_fg_peaks)
+    pmf = add_peaks(pmf, num_fg_peaks, peak_broadness, tallness)
 
     pmf = normalize_bins(pmf)
 
     return pmf
 
-def create_pmf_all_chroms(fasta):
-    """
-    Create pmf for each chromosome in the genome
-    
-    Input: Path to FASTA
-
-    Output: Dictionary; 
-        key: chromosome (ex. chr1, chr2) 
-        value:  pmf for the chromosome as a list (ex. [0.001, 0.002, 0.001, ...])
-    """
+def create_pmf_all_chroms(fasta, peak_broadness, tallness):
+    """Build pmf dictionary for all chromosomes"""
     genome_pmfs = {}
     for id, seq in LIB.read_fasta(fasta):
         if len(seq) < k: continue
-        genome_pmfs[id] = create_pmf(len(seq), num_bg_peaks, num_fg_peaks, k)
+        genome_pmfs[id] = create_pmf(len(seq), num_bg_peaks, num_fg_peaks,
+            k, peak_broadness, tallness)
     # print(json.dumps(genome_pmfs, indent=4))
     return genome_pmfs
 
@@ -188,24 +187,32 @@ def sample_genome(fasta, genome_pmfs):
     for i in range(num_sample):
         picked_chrom = random.choices(chroms, weights=biases)[0]
         sample_index = sample_from_bins(genome_pmfs[picked_chrom], 1)[0]
-        sample = list(range(sample_index, sample_index+k))
-        reads_dict[picked_chrom].append(sample)
+
+        strand = random.choice(['+', '-'])
+        if strand == '+':
+            coords = list(range(sample_index, sample_index + k))
+        else:
+            coords = list(range(sample_index + k - 1, sample_index - 1, -1))
+
+        reads_dict[picked_chrom].append((strand, coords))
 
     # print(json.dumps(reads_dict, indent=4))
     return reads_dict
 
 def sample_to_fasta(exp, fasta):
-    """
-    Converts base indices from the experiment into FASTA format with actual ACGT bases
-    """
+    """Convert sampled indices into FASTA format"""
+
+    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}
     frag_num = 1
+
     for id, seq in LIB.read_fasta(fasta):
-        if len(seq) < k: continue
-        for sample in exp[id]:
-            dna = []
-            for base_index in sample:
-                dna.append(seq[base_index])
-            print(f'>read_{frag_num}:{id}')
+        for strand, coords in exp[id]:
+            dna = [seq[index] for index in coords]
+
+            if strand == '-':
+                dna = [complement.get(base, 'N') for base in dna]
+
+            print(f'>read_{frag_num}:{id}:{strand}')
             print(''.join(dna))
             frag_num += 1
 
@@ -298,7 +305,7 @@ def graph_experiment(exp, genome_pmf):
 Below code will print the FASTA for the reads generated from experiment
 '''
 
-genome_pmf = create_pmf_all_chroms(fasta)
+genome_pmf = create_pmf_all_chroms(fasta, peak_broadness, tallness)
 exp = sample_genome(fasta, genome_pmf)
 # print(json.dumps(genome_pmf, indent=4)) # for debugging
 # print(json.dumps(exp, indent=4)) # for debugging
