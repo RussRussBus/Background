@@ -1,0 +1,11 @@
+name: epic2
+channels:
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - samtools
+  - bowtie2
+  - epic2
+  

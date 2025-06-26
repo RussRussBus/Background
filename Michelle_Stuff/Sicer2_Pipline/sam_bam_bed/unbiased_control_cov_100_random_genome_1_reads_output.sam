@@ -2,7 +2,7 @@
 @SQ	SN:chr1	LN:100
 @SQ	SN:chr2	LN:200
 @SQ	SN:chr3	LN:300
-@PG	ID:bowtie2	PN:bowtie2	VN:2.5.4	CL:"/home/mzheng00/miniconda3/envs/sicer2/bin/bowtie2-align-s --wrapper basic-0 -x ./index/genome -f -S ./unbiased_control_cov_100_random_genome_1_reads_output.sam -U ctrl1_reads//unbiased_control_cov_100_random_genome_1_reads.fa"
+@PG	ID:bowtie2	PN:bowtie2	VN:2.5.4	CL:"/home/mzheng00/anaconda3/envs/sicer2/bin/bowtie2-align-s --wrapper basic-0 -x ./index/genome -f -S ./unbiased_control_cov_100_random_genome_1_reads_output.sam -U ctrl1_reads//unbiased_control_cov_100_random_genome_1_reads.fa"
 read_1:chr1	0	chr1	64	42	20M	*	0	0	GAGATAGTCGGACGGACCAC	IIIIIIIIIIIIIIIIIIII	AS:i:0	XN:i:0	XM:i:0	XO:i:0	XG:i:0	NM:i:0	MD:Z:20	YT:Z:UU
 read_2:chr1	0	chr1	54	42	20M	*	0	0	TCAGGTGTGCGAGATAGTCG	IIIIIIIIIIIIIIIIIIII	AS:i:0	XN:i:0	XM:i:0	XO:i:0	XG:i:0	NM:i:0	MD:Z:20	YT:Z:UU
 read_3:chr1	0	chr1	20	42	20M	*	0	0	CAAGCGCGGCTGGCGTCGTC	IIIIIIIIIIIIIIIIIIII	AS:i:0	XN:i:0	XM:i:0	XO:i:0	XG:i:0	NM:i:0	MD:Z:20	YT:Z:UU

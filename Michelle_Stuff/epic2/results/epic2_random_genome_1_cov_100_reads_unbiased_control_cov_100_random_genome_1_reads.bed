@@ -1,0 +1,4 @@
+#Chromosome	Start	End	PValue	Score	Strand	ChIPCount	InputCount	FDR	log2FoldChange
+chr1	1	200	1.0	-inf	.	0	0	1.0	-inf
+chr2	1	200	1.0	-inf	.	0	0	1.0	-inf
+chr3	1	200	1.0	-inf	.	0	0	1.0	-inf
