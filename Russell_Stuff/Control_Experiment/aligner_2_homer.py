@@ -1,12 +1,13 @@
-import os
-import sys # used for debugging
 import argparse
+import sys
+import os
 
 parser = argparse.ArgumentParser(description='runs multiple coverages at once')
 parser.add_argument('genome', help='genome')
 parser.add_argument('exp', help='dir of diff exp coverages')
 parser.add_argument('ctrl', help='dir of control fasta files')
 parser.add_argument('--output', default='.', help='output destination')
+parser.add_argument('aligner', help='ht2 = hisat2, bt2 = bowtie2')
 arg = parser.parse_args()
 
 # working directory (aka output directory)
@@ -28,25 +29,63 @@ def rm_suffix(string):
         return string[:-3]
     return string
 
-###############################
-## initialization for hisat2 ##
-###############################
-
+# creating directories
 os.system(f'rm -rf {wd}/index')
 os.system(f'mkdir {wd}/index')
-os.system(f'hisat2-build {arg.genome} {wd}/index/genome > {wd}/index/log.txt')
 
-################################
-### running hisat2 and homer ###
-################################
+#####################
+## running bowtie2 ##
+#####################
+
+if arg.aligner == 'bt2':
+    os.system(f'bowtie2-build {arg.genome} {wd}/index/genome > {wd}/index/log.txt')
+
+    for ctrl_file in os.listdir(arg.ctrl):
+        ctrl_out = rm_suffix(ctrl_file)
+        os.system(f'bowtie2 -x {wd}/index/genome -f -U {arg.ctrl}/{ctrl_file} -S {wd}/{ctrl_out}_output.sam')
+
+    for exp_file in os.listdir(arg.exp):
+        exp_out = rm_suffix(exp_file)
+        os.system(f'bowtie2 -x {wd}/index/genome -f -U {arg.exp}/{exp_file} -S {wd}/{exp_out}_output.sam')
+
+######################
+### running hisat2 ###
+######################
+
+elif arg.aligner == 'ht2':
+    os.system(f'hisat2-build {arg.genome} {wd}/index/genome > {wd}/index/log.txt')
+
+    for ctrl_file in os.listdir(arg.ctrl):
+        ctrl_out = rm_suffix(ctrl_file)
+        os.system(f'hisat2 -f -x {wd}/index/genome -U {arg.ctrl}/{ctrl_file} -S {wd}/{ctrl_out}_output.sam')
+
+    for exp_file in os.listdir(arg.exp):
+        exp_out = rm_suffix(exp_file)
+        os.system(f'hisat2 -f -x {wd}/index/genome -U {arg.exp}/{ctrl_file} -S {wd}/{exp_out}_output.sam')
+
+else: sys.exit('Error: not a valid aligner. Valid aligners "bt2" "ht2"')
+
+########################
+### running samtools ###
+########################
+
+for ctrl_file in os.listdir(arg.ctrl):
+    ctrl_out = rm_suffix(ctrl_file)
+    os.system(f'samtools view -bS {wd}/{ctrl_out}_output.sam | samtools sort -o {wd}/{ctrl_out}_sorted.bam')
+
+for exp_file in os.listdir(arg.exp):
+    exp_out = rm_suffix(exp_file)
+    os.system(f'samtools view -bS {wd}/{exp_out}_output.sam | samtools sort -o {wd}/{exp_out}_sorted.bam')
+
+#####################
+### running homer ###
+#####################
 
 i = 0 # used to track first run
 
 for ctrl_file in os.listdir(arg.ctrl):
     ctrl_out = rm_suffix(ctrl_file)
 
-    os.system(f'hisat2 -f -x {wd}/index/genome -U {arg.ctrl}/{ctrl_file} -S {wd}/{ctrl_out}_output.sam')
-    os.system(f'samtools view -bS {wd}/{ctrl_out}_output.sam | samtools sort -o {wd}/{ctrl_out}_sorted.bam')
     os.system(f'makeTagDirectory {wd}/{ctrl_out}_tag_dir {wd}/{ctrl_out}_sorted.bam')
 
     for exp_file in os.listdir(arg.exp):
@@ -54,8 +93,6 @@ for ctrl_file in os.listdir(arg.ctrl):
         
         # ensures these files are only made once
         if i == 0:
-            os.system(f'hisat2 -f -x {wd}/index/genome -U {arg.exp}/{ctrl_file} -S {wd}/{exp_out}_output.sam')
-            os.system(f'samtools view -bS {wd}/{exp_out}_output.sam | samtools sort -o {wd}/{exp_out}_sorted.bam')
             os.system(f'makeTagDirectory {wd}/{exp_out}_tag_dir {wd}/{exp_out}_sorted.bam')
             
         os.system(f'findPeaks {wd}/{exp_out}_tag_dir -i {wd}/{ctrl_out}_tag_dir > {wd}/homer_{exp_out}_{ctrl_out}.txt')
