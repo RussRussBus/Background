@@ -24,3 +24,6 @@ Steps:
 
 2) Run `findPeaks exp_1_tag_dir -i ctrl_1_sorted.bam > homer_exp1_ctrl1.txt`
 `-i` indicates the control tag directory
+
+## other options
+`-fdr` this changes the threshold for what is a peak. Setting closer to 1 increases sensitivity but lowers specificity. Set closer to 0 to find peaks that less likely to be false positives.
