@@ -2,6 +2,7 @@ name: control_exp
 channels:
   - defaults
   - bioconda
+  - conda-forge
 dependencies:
   - bowtie2
   - python
@@ -9,3 +10,8 @@ dependencies:
   - macs2
   - homer
   - hisat2
+  - r-base=4.3
+  - r-rcpp
+  - r-bh
+  - r-spp
+  - bedtools

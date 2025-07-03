@@ -4,7 +4,6 @@ Note: I used mamba instead of conda in all conda/mamba related commands
 ## Converting .sam to .bam
 This conversion needs to happen because outputs of bowtie2 are in .sam formats and Homer uses .bam formats as input
 
-Steps:
 1) If `control_exp` environment is not set up, run command `conda env create -f control_environment.yml`.
 
 2) Activate `control_exp` environment
