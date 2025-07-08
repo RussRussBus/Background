@@ -57,7 +57,7 @@ Run `ctrl.data <- read.tagalign.tags(ctrl_file)` and `ctrl.data <- ctrl.data$tag
 Run `results <- find.binding.positions(signal.data = exp.data, control.data = ctrl.data, fdr = .05)`
 - this command saves the output of `find.binding.positions` into `results` variable
 - `find.binding.positions` is the spp function that finds the peaks of an experiment
-- `fdr` is set to 0.05 as it is the default of homer peakcaller
+- `fdr` is set to 0.001 as it is the default of homer peakcaller
 
 Run `write.table(results, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)`
 - produces a tsv file of the results

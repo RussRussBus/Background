@@ -11,13 +11,14 @@ if (length(args) != 3) {
 
 exp_file <- args[1]
 ctrl_file <- args[2]
-output_file <- args[3]
+fdr_input <- args[3]
 
 exp.data <- read.tagalign.tags(exp_file)
 exp.data <- exp.data$tags
 ctrl.data <- read.tagalign.tags(ctrl_file)
 ctrl.data <- ctrl.data$tags
 
-results <- find.binding.positions(signal.data = exp.data, control.data = ctrl.data, fdr = 1)
+results <- find.binding.positions(signal.data = exp.data, control.data = ctrl.data, fdr = fdr_input)
 
-write.table(results, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
+cat('results\n')
+print(results$npl)

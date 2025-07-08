@@ -1,6 +1,6 @@
 import argparse
-import sys
 import os
+import sys
 
 parser = argparse.ArgumentParser(description='runs multiple coverages at once')
 parser.add_argument('genome', help='genome')
@@ -9,6 +9,7 @@ parser.add_argument('ctrl', help='dir of control fasta files')
 parser.add_argument('--output', default='.', help='output destination')
 parser.add_argument('--aligner', default='bt2', help='ht2 = hisat2, bt2 = bowtie2')
 parser.add_argument('--peakcaller', default='homer', help='homer, spp')
+parser.add_argument('-fdr', type=float, default=0.001, help='set fdr rate, default 0.001')
 arg = parser.parse_args()
 
 # working directory (aka output directory)
@@ -21,6 +22,8 @@ with open(f'{wd}/log.txt', 'w') as out:
     out.write(f'genome: {arg.genome}\n')
     out.write(f'experiment: {arg.exp}\n')
     out.write(f'control: {arg.ctrl}\n')
+    out.write(f'aligner: {arg.aligner}\n')
+    out.write(f'peakcaller: {arg.peakcaller}\n')
 
 # cleans up file suffixes
 def rm_suffix(string):
@@ -132,7 +135,7 @@ if arg.peakcaller == 'homer':
             # ensures these files are only made once
             if i == 0: os.system(f'makeTagDirectory {wd}/{exp_out}_tag_dir {wd}/{exp_out}_sorted.bam')
                 
-            os.system(f'findPeaks {wd}/{exp_out}_tag_dir -i {wd}/{ctrl_out}_tag_dir > {wd}/homer_{exp_out}_{ctrl_out}.txt')
+            os.system(f'findPeaks {wd}/{exp_out}_tag_dir -i {wd}/{ctrl_out}_tag_dir -fdr {arg.fdr} > {wd}/homer_{exp_out}_{ctrl_out}.txt')
             
         i += 1
 
@@ -151,34 +154,54 @@ elif arg.peakcaller == 'spp':
         for exp_file in os.listdir(arg.exp):
             exp_out = rm_suffix(exp_file)
             exp_out = 'exp_' + exp_out
-        
-            os.system(f'Rscript spp.R {wd}/{exp_out}.tagAlign {wd}/{ctrl_out}.tagAlign {wd}/spp_{exp_out}_{ctrl_out}.tsv')
+            os.system(f'Rscript spp.R {wd}/{exp_out}.tagAlign {wd}/{ctrl_out}.tagAlign {arg.fdr} > {wd}/spp_{exp_out}_{ctrl_out}.txt')
+    
+    os.system(f'rm -rf {wd}/outputs')
+    os.system(f'mkdir {wd}/outputs')
+    os.system(f'mv {wd}/spp* {wd}/outputs')
 
 else: sys.exit('Error: not a valid peakcaller. Valid peakcallers "homer" "spp"')
 
-sys.exit()
 #######################
 ### sorting outputs ###
 #######################
 
-if arg.peakcaller == 'homer':
-    os.system(f'touch {wd}/output_summary.txt')
-    with open(f'{wd}/output_summary.txt', 'w') as out:
+print('SORTING NOW')
+os.system(f'touch {wd}/output_summary.txt')
+with open(f'{wd}/output_summary.txt', 'w') as out:
+    for file in os.listdir(f'{wd}/outputs'):
+        exp = ''
+        ctrl = ''
+        peaks = ''
 
-        for file in os.listdir(f'{wd}/outputs'):
-            exp = ''
-            ctrl = ''
-            peaks = ''
-
-            with open(f'{wd}/outputs/{file}', 'r') as fp:
+        with open(f'{wd}/outputs/{file}', 'r') as fp:
+            if arg.peakcaller == 'homer':
                 for line in fp:
                     line = line.strip()
                     if line.find('# tag ') != -1: exp = line[line.find('=')+2:]
                     elif line.find('# total') != -1: peaks = line[2:]
                     elif line.find('# input') != -1: ctrl = line[line.find('=')+2:]
-
                     if exp != '' and ctrl != '' and peaks != '': break
 
-                out.write(f'Experiment: {exp}\n')
-                out.write(f'Control: {ctrl}\n')
-                out.write(f'{peaks}\n\n')
+            results_section = False
+            if arg.peakcaller == 'spp':
+                for line in fp:
+                    line = line.strip()
+                    if line.find('exp') != -1:
+                        line = line.split()
+                        exp = line[1]
+                        continue
+                    if line.find('ctrl') != -1:
+                        line = line.split()
+                        ctrl = line[1]
+                        continue
+                    if line == '': continue
+                    if line.find('results') == -1 and results_section == False: continue
+                    results_section = True
+                    line = line.split()
+                    peaks = line[0]
+
+            out.write(f'Experiment: {exp}\n')
+            out.write(f'Control: {ctrl}\n')
+            if peaks.find('peaks') != -1 or peaks.find('Peaks') != -1: out.write(f'{peaks}\n\n')
+            else: out.write(f'Peaks: {peaks}\n\n')
