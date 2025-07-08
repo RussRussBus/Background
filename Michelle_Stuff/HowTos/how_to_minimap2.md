@@ -11,6 +11,12 @@ Have your `genome.fa`, `ctrl.fa` and `exp.fa` files in the pwd.
 ## Running
 
 `minimap2 -a genome.fa query.fa > alignment.sam`
-  Run for both the control and exp.
+
+parameters in order:<br>
+genome fasta file<br>
+ctrl/exp fasta file<br>
+output name_of_output_alignment.sam
+
+Run for both the control and exp.
 
 minimap2 works with both FASTA and FASTQ files. They also don't need to be gunzipped.
