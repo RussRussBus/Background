@@ -1,7 +1,0 @@
-name: minimap2
-channels:
-  - defaults
-  - bioconda
-  - conda-forge
-dependencies:
-  - minimap2
