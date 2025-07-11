@@ -33,15 +33,13 @@ def rm_suffix(string):
         return string[:-3]
     return string
 
-# creating directories
-os.system(f'rm -rf {wd}/index')
-os.system(f'mkdir {wd}/index')
-
 #######################
 ### running bowtie2 ###
 #######################
 
 if arg.aligner == 'bt2':
+    os.system(f'rm -rf {wd}/index')
+    os.system(f'mkdir {wd}/index')
     os.system(f'bowtie2-build {arg.genome} {wd}/index/genome > {wd}/index/log.txt')
 
     for ctrl_file in os.listdir(arg.ctrl):
@@ -59,6 +57,8 @@ if arg.aligner == 'bt2':
 ######################
 
 elif arg.aligner == 'ht2':
+    os.system(f'rm -rf {wd}/index')
+    os.system(f'mkdir {wd}/index')
     os.system(f'hisat2-build {arg.genome} {wd}/index/genome > {wd}/index/log.txt')
 
     for ctrl_file in os.listdir(arg.ctrl):
@@ -70,6 +70,10 @@ elif arg.aligner == 'ht2':
         exp_out = rm_suffix(exp_file)
         exp_out = 'exp_' + exp_out
         os.system(f'hisat2 -f -x {wd}/index/genome -U {arg.exp}/{ctrl_file} -S {wd}/{exp_out}_output.sam')
+
+########################
+### running minimap2 ###
+########################
 
 else: sys.exit('Error: not a valid aligner. Valid aligners "bt2" "ht2"')
 
@@ -114,7 +118,6 @@ if arg.peakcaller == 'spp':
 
         os.system(f"bedtools bamtobed -i {wd}/{exp_out}_sorted.bam | {awk_command} > {wd}/{exp_out}.tagAlign")
 
-
 #####################
 ### running homer ###
 #####################
@@ -146,6 +149,7 @@ if arg.peakcaller == 'homer':
 ###################
 ### running spp ###
 ###################
+
 elif arg.peakcaller == 'spp':
     for ctrl_file in os.listdir(arg.ctrl):
         ctrl_out = rm_suffix(ctrl_file)
